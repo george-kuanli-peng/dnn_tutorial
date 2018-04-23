@@ -36,6 +36,8 @@ from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 
 FLAGS = None
+max_iteration = None
+batch_size = None
 
 
 def deepnn(x):
@@ -123,6 +125,8 @@ def bias_variable(shape):
 
 
 def main(_):
+  global max_iteration, batch_size
+
   # Import data
   mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
 
@@ -156,28 +160,43 @@ def main(_):
   # Set GPU memory allocation option to prevent OOM error
   # modify them according to your environment
   config = tf.ConfigProto()
-  config.gpu_options.per_process_gpu_memory_fraction = 0.35
+  config.gpu_options.allow_growth = True
+  config.log_device_placement = True
+
 
   # Log device placement
   config.log_device_placement = True
 
   with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
-    for i in range(20000):
-      batch = mnist.train.next_batch(50)
+    for i in range(max_iteration):
+      batch = mnist.train.next_batch(batch_size)
       if i % 100 == 0:
         train_accuracy = accuracy.eval(feed_dict={
             x: batch[0], y_: batch[1], keep_prob: 1.0})
         print('step %d, training accuracy %g' % (i, train_accuracy))
       train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
+    # The original test uses the whold test set (10K images), easily causing
+    # memory dump. Instead, we pick up a subset of it.
+    test_batch = mnist.test.next_batch(200)
     print('test accuracy %g' % accuracy.eval(feed_dict={
-        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+        x: test_batch[0], y_: test_batch[1], keep_prob: 1.0}))
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--data_dir', type=str,
                       default='/tmp/tensorflow/mnist/input_data',
                       help='Directory for storing input data')
+  parser.add_argument('--max_iteration', type=int,
+                      default=20000,
+                      help='Maximum number of iterations')
+  parser.add_argument('--batch_size', type=int,
+                      default=50,
+                      help='Batch size')
   FLAGS, unparsed = parser.parse_known_args()
+  max_iteration = FLAGS.max_iteration
+  batch_size = FLAGS.batch_size
+  print('max_iteration=%d\nbatch_size=%d\n' % (max_iteration, batch_size))
+
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
