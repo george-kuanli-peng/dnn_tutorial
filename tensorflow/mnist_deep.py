@@ -113,13 +113,15 @@ def max_pool_2x2(x):
 
 
 def weight_variable(shape):
-  """weight_variable generates a weight variable of a given shape."""
+  """weight_variable generates a weight variable of a given shape.
+  It adds random noise to break symmetric structure."""
   initial = tf.truncated_normal(shape, stddev=0.1)
   return tf.Variable(initial)
 
 
 def bias_variable(shape):
-  """bias_variable generates a bias variable of a given shape."""
+  """bias_variable generates a bias variable of a given shape.
+  It sets a small positive bias to avoid dead neurons."""
   initial = tf.constant(0.1, shape=shape)
   return tf.Variable(initial)
 
@@ -130,11 +132,9 @@ def main(_):
   # Import data
   mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
 
-  # Create the model
-  x = tf.placeholder(tf.float32, [None, 784])
-
-  # Define loss and optimizer
-  y_ = tf.placeholder(tf.float32, [None, 10])
+  # Data: image & label
+  x = tf.placeholder(tf.float32, [None, 784])  # 28x28 image in 1-D array
+  y_ = tf.placeholder(tf.float32, [None, 10])  # categories: 0~9
 
   # Build the graph for the deep net
   y_conv, keep_prob = deepnn(x)
